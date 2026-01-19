@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+
+<meta property="og:title" content="灯光方案对比展示">
+<meta property="og:description" content="多状态灯光方案交互对比视图">
+<meta property="og:image" content="layer5.jpg">
+
+<title>Lighting Compare</title>
+
+<style>
+html,body{
+  margin:0;
+  height:100%;
+  background:#111;
+  overflow:hidden;
+  font-family:system-ui;
+}
+
+#viewer{
+  position:relative;
+  width:100%;
+  height:100%;
+}
+
+.layer{
+  position:absolute;
+  inset:0;
+  background-size:cover;
+  background-position:center;
+  transition:clip-path .6s ease, opacity .4s ease;
+  cursor:pointer;
+}
+
+#ui{
+  position:fixed;
+  top:20px;
+  right:20px;
+  z-index:10;
+}
+
+button{
+  padding:10px 16px;
+  background:#222;
+  color:#fff;
+  border:1px solid #444;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.label{
+  position:absolute;
+  left:20px;
+  color:#fff;
+  font-style:italic;
+  opacity:.85;
+  text-shadow:0 2px 6px #000;
+  transition:opacity .4s;
+}
+
+.hidden{opacity:0;pointer-events:none;}
+</style>
+</head>
+
+<body>
+
+<div id="ui">
+  <button id="toggle">图层视图</button>
+</div>
+
+<div id="viewer">
+
+  <div class="layer" data-id="0" style="background-image:url(layer1.jpg)"></div>
+  <div class="layer" data-id="1" style="background-image:url(layer2.jpg)"></div>
+  <div class="layer" data-id="2" style="background-image:url(layer3.jpg)"></div>
+  <div class="layer" data-id="3" style="background-image:url(layer4.jpg)"></div>
+  <div class="layer" data-id="4" style="background-image:url(layer5.jpg)"></div>
+
+  <div class="label hidden" style="top:20%">灯光点位</div>
+  <div class="label hidden" style="top:32%">白模</div>
+  <div class="label hidden" style="top:44%">白模灯光</div>
+  <div class="label hidden" style="top:56%">暖色</div>
+  <div class="label hidden" style="top:68%">冷色</div>
+
+</div>
+
+<script>
+const layers = document.querySelectorAll(".layer");
+const labels = document.querySelectorAll(".label");
+const toggle = document.getElementById("toggle");
+
+let split = false;
+let focus = null;
+
+// 斜线分割参数
+const cuts = [
+  "polygon(0 0, 100% 0, 100% 18%, 0 38%)",
+  "polygon(0 20%, 100% 0, 100% 38%, 0 58%)",
+  "polygon(0 40%, 100% 20%, 100% 58%, 0 78%)",
+  "polygon(0 60%, 100% 40%, 100% 78%, 0 100%)",
+  "polygon(0 80%, 100% 60%, 100% 100%, 0 100%)"
+];
+
+function showMain(){
+  layers.forEach((l,i)=>{
+    l.style.clipPath = i===4 ? "none" : "polygon(0 0,0 0,0 0,0 0)";
+  });
+  labels.forEach(l=>l.classList.add("hidden"));
+  split = false;
+  focus = null;
+}
+
+function showSplit(){
+  layers.forEach((l,i)=>{
+    l.style.clipPath = cuts[i];
+  });
+  labels.forEach(l=>l.classList.remove("hidden"));
+  split = true;
+}
+
+toggle.onclick = ()=>{
+  split ? showMain() : showSplit();
+};
+
+layers.forEach((layer,i)=>{
+  layer.onclick = ()=>{
+    if(!split) return;
+
+    if(focus === i){
+      showSplit();
+      focus = null;
+      return;
+    }
+
+    layers.forEach((l,idx)=>{
+      l.style.clipPath = idx===i ? "none" : "polygon(0 0,0 0,0 0,0 0)";
+    });
+    labels.forEach(l=>l.classList.add("hidden"));
+    focus = i;
+  };
+});
+
+showMain();
+</script>
+
+</body>
+</html>
