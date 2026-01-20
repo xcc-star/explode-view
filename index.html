@@ -5,15 +5,15 @@
 
 <meta property="og:title" content="灯光方案对比展示">
 <meta property="og:description" content="多状态灯光方案交互对比视图">
-<meta property="og:image" content="layer5.png">
+<meta property="og:image" content="layer5.jpg">
 
-<title>Lighting Layer Viewer</title>
+<title>Lighting Compare</title>
 
 <style>
 html,body{
   margin:0;
   height:100%;
-  background:#2b2f33;
+  background:#111;
   overflow:hidden;
   font-family:system-ui;
 }
@@ -29,27 +29,9 @@ html,body{
   inset:0;
   background-size:cover;
   background-position:center;
-  transition:clip-path .7s cubic-bezier(.4,0,.2,1);
+  transition:clip-path .6s ease, opacity .4s ease;
   cursor:pointer;
 }
-
-/* 分割线 */
-.layer::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:linear-gradient(
-    110deg,
-    transparent 48%,
-    rgba(255,180,80,.8) 50%,
-    transparent 52%
-  );
-  pointer-events:none;
-  opacity:0;
-  transition:.5s;
-}
-
-.split .layer::after{opacity:1;}
 
 #ui{
   position:fixed;
@@ -60,81 +42,64 @@ html,body{
 
 button{
   padding:10px 16px;
-  background:#1f2326;
+  background:#222;
   color:#fff;
-  border:1px solid #555;
+  border:1px solid #444;
   border-radius:6px;
   cursor:pointer;
 }
 
 .label{
   position:absolute;
-  left:24px;
-  color:#fff;
-  font-style:italic;
-  opacity:.9;
-  text-shadow:0 3px 8px #000;
-  transform:rotate(-70deg);
-  transform-origin:left center;
-  transition:.5s;
-  pointer-events:none;
-}
-
-.hidden{opacity:0}
-
-#title{
-  position:fixed;
-  top:20px;
   left:20px;
   color:#fff;
-  font-size:18px;
-  opacity:0;
-  transition:.4s;
+  font-style:italic;
+  opacity:.85;
+  text-shadow:0 2px 6px #000;
+  transition:opacity .4s;
 }
+
+.hidden{opacity:0;pointer-events:none;}
 </style>
 </head>
 
 <body>
 
 <div id="ui">
-  <button id="toggle">Layer View</button>
+  <button id="toggle">图层视图</button>
 </div>
-
-<div id="title"></div>
 
 <div id="viewer">
 
-  <div class="layer" data-name="灯光点位" style="background-image:url(layer1.png)"></div>
-  <div class="layer" data-name="白模" style="background-image:url(layer2.png)"></div>
-  <div class="layer" data-name="白模灯光" style="background-image:url(layer3.png)"></div>
-  <div class="layer" data-name="暖色" style="background-image:url(layer4.png)"></div>
-  <div class="layer" data-name="冷色" style="background-image:url(layer5.png)"></div>
+  <div class="layer" data-id="0" style="background-image:url(layer1.png)"></div>
+  <div class="layer" data-id="1" style="background-image:url(layer2.png)"></div>
+  <div class="layer" data-id="2" style="background-image:url(layer3.png)"></div>
+  <div class="layer" data-id="3" style="background-image:url(layer4.png)"></div>
+  <div class="layer" data-id="4" style="background-image:url(layer5.png)"></div>
 
-  <div class="label" style="top:22%">灯光点位</div>
-  <div class="label" style="top:34%">白模</div>
-  <div class="label" style="top:46%">白模灯光</div>
-  <div class="label" style="top:58%">渲染</div>
-  <div class="label" style="top:70%">雨夜</div>
+  <div class="label hidden" style="top:20%">灯光点位</div>
+  <div class="label hidden" style="top:32%">白模</div>
+  <div class="label hidden" style="top:44%">白模灯光</div>
+  <div class="label hidden" style="top:56%">暖色</div>
+  <div class="label hidden" style="top:68%">冷色</div>
 
 </div>
 
 <script>
-const viewer = document.getElementById("viewer");
 const layers = document.querySelectorAll(".layer");
 const labels = document.querySelectorAll(".label");
 const toggle = document.getElementById("toggle");
-const title = document.getElementById("title");
 
 let split = false;
 let focus = null;
 
-/* 工业级斜切带 */
+// 斜线分割参数
 const cuts = [
- "polygon(0 0,100% 0,85% 100%,0 100%)",
- "polygon(15% 0,100% 0,85% 100%,0 100%)",
- "polygon(30% 0,100% 0,70% 100%,0 100%)",
- "polygon(45% 0,100% 0,55% 100%,0 100%)",
- "polygon(60% 0,100% 0,40% 100%,0 100%)"
+  "polygon(0 0, 100% 0, 100% 18%, 0 38%)",
+  "polygon(0 20%, 100% 0, 100% 38%, 0 58%)",
+  "polygon(0 40%, 100% 20%, 100% 58%, 0 78%)",
+  "polygon(0 60%, 100% 40%, 100% 78%, 0 100%)",
+  "polygon(0 80%, 100% 60%, 100% 100%, 0 100%)"
 ];
 
 function showMain(){
@@ -142,8 +107,6 @@ function showMain(){
     l.style.clipPath = i===4 ? "none" : "polygon(0 0,0 0,0 0,0 0)";
   });
   labels.forEach(l=>l.classList.add("hidden"));
-  viewer.classList.remove("split");
-  title.style.opacity = 0;
   split = false;
   focus = null;
 }
@@ -153,12 +116,12 @@ function showSplit(){
     l.style.clipPath = cuts[i];
   });
   labels.forEach(l=>l.classList.remove("hidden"));
-  viewer.classList.add("split");
-  title.style.opacity = 0;
   split = true;
 }
 
-toggle.onclick = ()=> split ? showMain() : showSplit();
+toggle.onclick = ()=>{
+  split ? showMain() : showSplit();
+};
 
 layers.forEach((layer,i)=>{
   layer.onclick = ()=>{
@@ -171,18 +134,9 @@ layers.forEach((layer,i)=>{
     }
 
     layers.forEach((l,idx)=>{
-      if(idx === i){
-        l.style.clipPath = "none";
-      }else if(idx < i){
-        l.style.clipPath = "polygon(0 0,0 0,0 100%,0 100%)";
-      }else{
-        l.style.clipPath = "polygon(100% 0,100% 0,100% 100%,100% 100%)";
-      }
+      l.style.clipPath = idx===i ? "none" : "polygon(0 0,0 0,0 0,0 0)";
     });
-
     labels.forEach(l=>l.classList.add("hidden"));
-    title.textContent = layer.dataset.name;
-    title.style.opacity = 1;
     focus = i;
   };
 });
@@ -192,3 +146,4 @@ showMain();
 
 </body>
 </html>
+
