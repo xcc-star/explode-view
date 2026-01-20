@@ -2,12 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-
-<meta property="og:title" content="灯光方案对比展示">
-<meta property="og:description" content="多状态灯光方案交互对比视图">
-<meta property="og:image" content="layer4.png">
-
-<title>Lighting Compare</title>
+<title>Lighting Compare - Pixel Perfect</title>
 
 <style>
 html,body{
@@ -22,7 +17,7 @@ html,body{
   position:relative;
   width:100%;
   height:100%;
-  overflow: hidden; /* 确保分割线不会超出容器 */
+  overflow: hidden;
 }
 
 .layer{
@@ -30,192 +25,215 @@ html,body{
   inset:0;
   background-size:cover;
   background-position:center;
-  transition:clip-path .6s ease, opacity .4s ease;
   cursor:pointer;
+  will-change: clip-path;
 }
 
-/* 分割线元素 */
 .split-line {
   position: absolute;
-  background-color: rgba(200, 200, 200, 0.8); /* 白色半透明线，可以根据需要调整颜色和透明度 */
-  z-index: 5; /* 在图层之上但在UI之下 */
+  height: 2px;
+  background-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 4px rgba(0,0,0,0.5);
+  z-index: 5;
   transform-origin: top left;
+  pointer-events: none;
 }
 
-#ui{
-  position:fixed;
-  top:20px;
-  right:20px;
-  z-index:10;
+.asm-ready .layer, 
+.asm-ready .split-line {
+  transition: all .5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-button{
-  padding:10px 16px;
-  background:#222;
-  color:#fff;
-  border:1px solid #444;
-  border-radius:6px;
-  cursor:pointer;
+body.is-animating .layer {
+  cursor: none; 
 }
 
-.label{
-  position:absolute;
-  color:#fff;
-  font-style:italic;
-  opacity:.85;
-  text-shadow:0 2px 6px #000;
-  transition:opacity .4s;
-  white-space: nowrap; /* 防止文字换行 */
-  letter-spacing: 2px; /* 调整字符间距 */
-  transform: rotate(70deg); /* 旋转角度与分割线倾斜角度匹配 */
-  transform-origin: top left; /* 设置旋转原点 */
+/* 标签样式重构 */
+.label {
+  position: absolute;
+  color: #fff;
+  font-style: italic;
+  opacity: 0.9;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  white-space: nowrap;
+  letter-spacing: 2px;
+  
+  /* 强制还原旋转位置 */
+  transform: rotate(70deg);
+  transform-origin: top left;
+  pointer-events: none;
+  z-index: 10;
+
+  /* 使用 Flex 布局强制对齐，彻底解决高低不平 */
+  display: flex;
+  align-items: flex-end; /* 强制底部对齐 */
 }
 
-.hidden{opacity:0;pointer-events:none;}
+/* 逐字 span 样式重构 */
+.label span {
+  display: block;
+  opacity: 1;
+  /* 解决斜体溢出导致的视觉切断感 */
+  padding: 0 1px;
+  /* 改变动画方式：从位移改为缩放，避免亚像素位移导致的高低感 */
+  transform: scale(1) translateZ(0); 
+  will-change: transform, opacity;
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+}
+
+/* 离场状态 */
+.label.hidden {
+  opacity: 0;
+  transition: opacity 0.1s linear; 
+}
+
+.label.hidden span {
+  opacity: 0;
+  /* 离场时快速缩小 */
+  transform: scale(0.8) translateZ(0);
+  transition: none !important; 
+}
+
+/* 鼠标跟随省略号 */
+#custom-cursor {
+  position: fixed;
+  top: 0; left: 0;
+  color: #fff;
+  font-size: 24px;
+  font-weight: bold;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.15s;
+  text-shadow: 0 0 10px rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  will-change: transform;
+}
+body.is-animating #custom-cursor { opacity: 1; }
+.dots::after { content: ''; animation: dot-anim 1.5s infinite; }
+@keyframes dot-anim { 0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; } }
 </style>
 </head>
 
 <body>
 
-<div id="ui">
-  <button id="toggle">图层视图</button>
-</div>
-
 <div id="viewer">
-
-  <div class="layer" data-id="0" style="background-image:url(layer1.png)"></div>
-  <div class="layer" data-id="1" style="background-image:url(layer2.png)"></div>
-  <div class="layer" data-id="2" style="background-image:url(layer3.png)"></div>
-  <div class="layer" data-id="3" style="background-image:url(layer4.png)"></div>
+  <div class="layer" style="background-image:url(layer1.png); background-color:#333;"></div>
+  <div class="layer" style="background-image:url(layer2.png); background-color:#444;"></div>
+  <div class="layer" style="background-image:url(layer3.png); background-color:#555;"></div>
+  <div class="layer" style="background-image:url(layer4.png); background-color:#666;"></div>
   
-  <!-- 分割线元素 -->
-  <div class="split-line" id="split-line-1"></div>
-  <div class="split-line" id="split-line-2"></div>
-  <div class="split-line" id="split-line-3"></div>
+  <div class="split-line"></div>
+  <div class="split-line"></div>
+  <div class="split-line"></div>
 
-  <div class="label" style="top:2%; left:17%;">灯光点位</div>
-  <div class="label" style="top:2%; left:42%;">白模</div>
-  <div class="label" style="top:2%; left:67%;">白模灯光</div>
-
+  <div class="label" style="top:1.5%; left:17.5%;">灯光点位</div>
+  <div class="label" style="top:1.5%; left:42.5%;">白模</div>
+  <div class="label" style="top:1.5%; left:67.5%;">白模灯光</div>
 </div>
+
+<div id="custom-cursor"><span class="dots"></span></div>
 
 <script>
-const viewer = document.getElementById("viewer");
 const layers = document.querySelectorAll(".layer");
 const labels = document.querySelectorAll(".label");
-const toggle = document.getElementById("toggle");
+const lines = document.querySelectorAll('.split-line');
+const customCursor = document.getElementById('custom-cursor');
 
-let split = true;   // 默认图层视图
 let focus = null;
+let isAnimating = false; 
+const defaultLines = [18, 43, 68]; 
+const offset = 15; 
 
-/* 纵向左倾斜切（等距平行） - 3条分割线，4个区域 */
-const cuts = [
-  "polygon(0 0, 18% 0, 33% 100%, 0 100%)",      // 区域1
-  "polygon(18% 0, 43% 0, 58% 100%, 33% 100%)",   // 区域2
-  "polygon(43% 0, 68% 0, 83% 100%, 58% 100%)",   // 区域3
-  "polygon(68% 0, 100% 0, 100% 100%, 83% 100%)"  // 区域4
-];
+// 逐字初始化逻辑
+labels.forEach(label => {
+    const text = label.innerText;
+    label.innerText = '';
+    [...text].forEach((char, i) => {
+        const span = document.createElement('span');
+        span.innerText = char;
+        // 进场延迟设置
+        span.style.transitionDelay = `${0.4 + (i * 0.04)}s`;
+        label.appendChild(span);
+    });
+});
 
-// 分割线的坐标数据 [x1, y1, x2, y2] 百分比形式
-const splitLines = [
-  [18, 0, 33, 100],   // 第一条分割线：从 (18%, 0%) 到 (33%, 100%)
-  [43, 0, 58, 100],   // 第二条分割线：从 (43%, 0%) 到 (58%, 100%)
-  [68, 0, 83, 100]    // 第三条分割线：从 (68%, 0%) 到 (83%, 100%)
-];
-
-function showMain(){
-  layers.forEach((l,i)=>{
-    l.style.clipPath = i===3 ? "none" : "polygon(0 0,0 0,0 0,0 0)";
-  });
-  
-  // 隐藏分割线
-  document.querySelectorAll('.split-line').forEach(line => {
-    line.style.display = 'none';
-  });
-  
-  labels.forEach(l=>l.classList.add("hidden"));
-  viewer.classList.remove("split");
-  split = false;
-  focus = null;
+function updateCursor(e) {
+    customCursor.style.transform = `translate3d(${e.clientX - 10}px, ${e.clientY - 25}px, 0)`;
 }
+window.addEventListener('mousemove', updateCursor);
 
-function showSplit(){
-  layers.forEach((l,i)=>{
-    l.style.clipPath = cuts[i];
+function render() {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  let lineTargets = [];
+
+  if (focus === null) {
+    lineTargets = [...defaultLines];
+  } else {
+    const leftBase = -60; 
+    const rightBase = 140;
+    const step = 10; 
+    lineTargets = defaultLines.map((_, index) => {
+      if (index < focus) return leftBase + (index * step);
+      else return rightBase + (index * step);
+    });
+  }
+
+  const boundaries = [0, ...lineTargets, 100];
+
+  layers.forEach((l, i) => {
+    let x1 = boundaries[i], x2 = boundaries[i+1], x3 = x2 + offset, x4 = x1 + offset;
+    const finalX1 = (i === 0) ? Math.min(x1, 0) : x1;
+    const finalX4 = (i === 0) ? Math.min(x4, 0) : x4;
+    const finalX2 = (i === layers.length - 1) ? Math.max(x2, 100) : x2;
+    const finalX3 = (i === layers.length - 1) ? Math.max(x3, 100 + offset) : x3;
+    l.style.clipPath = `polygon(${finalX1}% 0%, ${finalX2}% 0%, ${finalX3}% 100%, ${finalX4}% 100%)`;
   });
-  
-  // 显示并精确定位分割线
-  const viewerRect = viewer.getBoundingClientRect();
-  const viewerWidth = viewerRect.width;
-  const viewerHeight = viewerRect.height;
-  
-  document.querySelectorAll('.split-line').forEach((line, index) => {
-    const [x1, y1, x2, y2] = splitLines[index];
-    
-    // 将百分比转换为像素值
-    const x1Px = (x1 / 100) * viewerWidth;
-    const y1Px = (y1 / 100) * viewerHeight;
-    const x2Px = (x2 / 100) * viewerWidth;
-    const y2Px = (y2 / 100) * viewerHeight;
-    
-    // 计算线的长度（两点间距离）
-    const length = Math.sqrt(Math.pow(x2Px - x1Px, 2) + Math.pow(y2Px - y1Px, 2));
-    
-    // 计算旋转角度（弧度转角度）
-    const angle = Math.atan2(y2Px - y1Px, x2Px - x1Px) * 180 / Math.PI;
-    
-    // 设置分割线的样式
+
+  lines.forEach((line, i) => {
+    const tx = lineTargets[i];
+    const px_x1 = (tx / 100) * width, px_x2 = ((tx + offset) / 100) * width;
+    const deltaX = px_x2 - px_x1, deltaY = height;
+    const length = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
     line.style.width = `${length}px`;
-    line.style.height = '2px';  // 线的厚度
-    line.style.left = `${x1Px}px`;
-    line.style.top = `${y1Px}px`;
+    line.style.left = `${px_x1}px`;
     line.style.transform = `rotate(${angle}deg)`;
-    line.style.transformOrigin = '0 0';  // 左上角作为旋转中心
-    line.style.display = 'block';
   });
-  
-  labels.forEach(l=>l.classList.remove("hidden"));
-  viewer.classList.add("split");
-  split = true;
+
+  labels.forEach(l => {
+    focus === null ? l.classList.remove("hidden") : l.classList.add("hidden");
+  });
 }
 
-// 监听窗口大小变化，重新定位分割线
-window.addEventListener('resize', () => {
-  if(split) {
-    showSplit();
+layers[0].addEventListener('transitionend', (e) => {
+  if (e.propertyName === 'clip-path') {
+    isAnimating = false;
+    document.body.classList.remove('is-animating');
   }
 });
 
-toggle.onclick = ()=>{
-  split ? showMain() : showSplit();
-};
+render();
+requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
+    document.body.classList.add('asm-ready');
+  });
+});
+window.addEventListener('resize', render);
 
-layers.forEach((layer,i)=>{
-  layer.onclick = ()=>{
-    if(!split) return;
-
-    if(focus === i){
-      showSplit();
-      focus = null;
-      return;
-    }
-
-    layers.forEach((l,idx)=>{
-      l.style.clipPath = idx===i ? "none" : "polygon(0 0,0 0,0 0,0 0)";
-    });
-
-    // 在单个图层聚焦模式下隐藏分割线
-    document.querySelectorAll('.split-line').forEach(line => {
-      line.style.display = 'none';
-    });
-    
-    labels.forEach(l=>l.classList.add("hidden"));
-    focus = i;
+layers.forEach((layer, i) => {
+  layer.onclick = (e) => {
+    if (isAnimating) return; 
+    updateCursor(e);
+    const targetFocus = (focus === i) ? null : i;
+    isAnimating = true;
+    document.body.classList.add('is-animating');
+    focus = targetFocus;
+    render();
   };
 });
-
-/* 默认进入即为图层视图 */
-showSplit();
 </script>
 
 </body>
