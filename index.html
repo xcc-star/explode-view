@@ -5,7 +5,7 @@
 
 <meta property="og:title" content="灯光方案对比展示">
 <meta property="og:description" content="多状态灯光方案交互对比视图">
-<meta property="og:image" content="layer4.png">
+<meta property="og:image" content="layer5.jpg">
 
 <title>Lighting Compare</title>
 
@@ -31,26 +31,6 @@ html,body{
   background-position:center;
   transition:clip-path .6s ease, opacity .4s ease;
   cursor:pointer;
-}
-
-/* 分割线高亮 */
-.layer::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:linear-gradient(
-    100deg,
-    transparent 49%,
-    rgba(255,170,60,.9) 50%,
-    transparent 51%
-  );
-  opacity:0;
-  transition:.4s;
-  pointer-events:none;
-}
-
-.split .layer::after{
-  opacity:1;
 }
 
 #ui{
@@ -95,37 +75,38 @@ button{
   <div class="layer" data-id="1" style="background-image:url(layer2.png)"></div>
   <div class="layer" data-id="2" style="background-image:url(layer3.png)"></div>
   <div class="layer" data-id="3" style="background-image:url(layer4.png)"></div>
+  <div class="layer" data-id="4" style="background-image:url(layer5.png)"></div>
 
-  <div class="label" style="top:28%">灯光点位</div>
-  <div class="label" style="top:40%">白模</div>
-  <div class="label" style="top:52%">白模灯光</div>
-  <div class="label" style="top:64%">冷色</div>
+  <div class="label hidden" style="top:20%">灯光点位</div>
+  <div class="label hidden" style="top:32%">白模</div>
+  <div class="label hidden" style="top:44%">白模灯光</div>
+  <div class="label hidden" style="top:56%">暖色</div>
+  <div class="label hidden" style="top:68%">冷色</div>
 
 </div>
 
 <script>
-const viewer = document.getElementById("viewer");
 const layers = document.querySelectorAll(".layer");
 const labels = document.querySelectorAll(".label");
 const toggle = document.getElementById("toggle");
 
-let split = true;   // 默认图层视图
+let split = false;
 let focus = null;
 
-/* 纵向左倾斜切（等距平行） */
+// 斜线分割参数
 const cuts = [
-  "polygon(0 0, 40% 0, 15% 100%, 0 100%)",
-  "polygon(25% 0, 55% 0, 30% 100%, 0 100%)",
-  "polygon(50% 0, 80% 0, 55% 100%, 25% 100%)",
-  "polygon(75% 0, 100% 0, 100% 100%, 50% 100%)"
+  "polygon(0 0, 100% 0, 100% 18%, 0 38%)",
+  "polygon(0 20%, 100% 0, 100% 38%, 0 58%)",
+  "polygon(0 40%, 100% 20%, 100% 58%, 0 78%)",
+  "polygon(0 60%, 100% 40%, 100% 78%, 0 100%)",
+  "polygon(0 80%, 100% 60%, 100% 100%, 0 100%)"
 ];
 
 function showMain(){
   layers.forEach((l,i)=>{
-    l.style.clipPath = i===3 ? "none" : "polygon(0 0,0 0,0 0,0 0)";
+    l.style.clipPath = i===4 ? "none" : "polygon(0 0,0 0,0 0,0 0)";
   });
   labels.forEach(l=>l.classList.add("hidden"));
-  viewer.classList.remove("split");
   split = false;
   focus = null;
 }
@@ -135,7 +116,6 @@ function showSplit(){
     l.style.clipPath = cuts[i];
   });
   labels.forEach(l=>l.classList.remove("hidden"));
-  viewer.classList.add("split");
   split = true;
 }
 
@@ -156,15 +136,14 @@ layers.forEach((layer,i)=>{
     layers.forEach((l,idx)=>{
       l.style.clipPath = idx===i ? "none" : "polygon(0 0,0 0,0 0,0 0)";
     });
-
     labels.forEach(l=>l.classList.add("hidden"));
     focus = i;
   };
 });
 
-/* 默认进入即为图层视图 */
-showSplit();
+showMain();
 </script>
 
 </body>
 </html>
+
